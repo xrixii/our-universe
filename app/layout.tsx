@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { Cormorant_Garamond, Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { MusicProvider } from '@/context/MusicContext';
 import { ChapterProvider } from '@/context/ChapterContext';
@@ -10,6 +10,13 @@ const cormorantGaramond = Cormorant_Garamond({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-heading',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-romantic',
 });
 
 const inter = Inter({
@@ -39,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${cormorantGaramond.variable} ${inter.variable}`}>
+    <html lang="en" className={`${cormorantGaramond.variable} ${playfair.variable} ${inter.variable}`}>
       <body className="font-body bg-bg text-white overflow-x-hidden">
         <MusicProvider>
           <ChapterProvider>{children}</ChapterProvider>
