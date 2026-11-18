@@ -39,18 +39,13 @@ export default function MusicPlayer() {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <AnimatePresence>
-      {hasInteracted && (
-        <motion.div
-          key="music-player"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0, transition: { duration: 0.5, ease: 'easeOut' } }}
-          exit={{ opacity: 0, x: 20, transition: { duration: 0.3 } }}
-          className="fixed top-4 right-4 z-50"
-          style={{ maxWidth: '120px' }}
-          aria-label="Music player"
-          role="region"
-        >
+    <div
+      key="music-player"
+      className="fixed top-4 right-4 z-50"
+      style={{ maxWidth: '130px' }}
+      aria-label="Music player"
+      role="region"
+    >
           {/* Glass container */}
           <div
             className="rounded-xl overflow-hidden"
@@ -158,8 +153,6 @@ export default function MusicPlayer() {
               to   { height: 12px; }
             }
           `}</style>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
+      </div>
+  );
 }

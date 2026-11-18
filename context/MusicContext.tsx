@@ -32,58 +32,64 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // Load audio only after the user has interacted
+  // Initialize and preload audio element on client mount
   useEffect(() => {
-    if (!hasInteracted) return;
+    if (typeof window === 'undefined') return;
 
     const audio = new Audio(`/audio/${config.musicFilename}`);
     audio.loop = true;
+    audio.preload = 'auto';
     audio.muted = isMuted;
     audioRef.current = audio;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onDurationChange = () => setDuration(audio.duration);
+    const onDurationChange = () => setDuration(audio.duration || 0);
     const onEnded = () => setIsPlaying(false);
-    const onError = () => {
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onError = (e: Event) => {
+      console.warn('[MusicProvider] Audio error:', e);
       setIsPlaying(false);
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('durationchange', onDurationChange);
     audio.addEventListener('ended', onEnded);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
     audio.addEventListener('error', onError);
-
-    // Attempt to play immediately after the user has interacted
-    // Attempt to play only if audio source is ready
-    audio.play().then(() => {
-      setIsPlaying(true);
-    }).catch((err) => {
-      console.warn('[MusicProvider] Could not auto-play audio:', err);
-    }).catch(() => {
-      // Audio file might not exist yet or autoplay blocked
-      setIsPlaying(false);
-    });
 
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('durationchange', onDurationChange);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
       audio.removeEventListener('error', onError);
       audio.pause();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasInteracted]);
+  }, []);
 
   const play = useCallback(() => {
-    if (!audioRef.current) return;
-    audioRef.current
+    setHasInteractedState(true);
+    let audio = audioRef.current;
+    if (!audio) {
+      audio = new Audio(`/audio/${config.musicFilename}`);
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.muted = isMuted;
+      audioRef.current = audio;
+    }
+    audio
       .play()
-      .then(() => setIsPlaying(true))
+      .then(() => {
+        setIsPlaying(true);
+      })
       .catch((err) => {
-        console.warn('[MusicProvider] play() failed:', err);
+        console.warn('[MusicProvider] play() failed or blocked by browser autoplay policy:', err);
         setIsPlaying(false);
       });
-  }, []);
+  }, [isMuted]);
 
   const pause = useCallback(() => {
     if (!audioRef.current) return;
@@ -92,12 +98,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const togglePlay = useCallback(() => {
-    if (isPlaying) {
-      pause();
-    } else {
+    setHasInteractedState(true);
+    if (!audioRef.current) {
       play();
+      return;
     }
-  }, [isPlaying, play, pause]);
+    if (audioRef.current.paused) {
+      play();
+    } else {
+      pause();
+    }
+  }, [play, pause]);
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
@@ -111,22 +122,22 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setHasInteractedState(true);
   }, []);
 
-    return (
-      <MusicContext.Provider
-        value={{
-          isPlaying,
-          isMuted,
-          hasInteracted,
-          currentTime,
-          duration,
-          play,
-          pause,
-          togglePlay,
-          toggleMute,
-          setHasInteracted,
-        }}
-      >
-        {children}
-      </MusicContext.Provider>
-    );
-  }
+  return (
+    <MusicContext.Provider
+      value={{
+        isPlaying,
+        isMuted,
+        hasInteracted,
+        currentTime,
+        duration,
+        play,
+        pause,
+        togglePlay,
+        toggleMute,
+        setHasInteracted,
+      }}
+    >
+      {children}
+    </MusicContext.Provider>
+  );
+}
